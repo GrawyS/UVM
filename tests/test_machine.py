@@ -60,6 +60,61 @@ class CommandsTest(unittest.TestCase):
         self.assertEqual(machine.run(), 0)
 
 
+class SqrtTest(unittest.TestCase):
+    """Команда sqrt (этап 4): целый корень из значения памяти."""
+
+    SETUP = "r1 = 100\nr2 = 200\nr3 = {value}\n[r1] = r3\n"
+
+    def sqrt_of(self, value, command):
+        """Выполняет команду sqrt над value, лежащим в памяти[100]."""
+        machine = run_text(self.SETUP.format(value=value) + command)
+        return machine
+
+    def test_perfect_square(self):
+        """sqrt(144) = 12."""
+        machine = self.sqrt_of(144, "[r2] = sqrt([r1])")
+        self.assertEqual(machine.memory[200], 12)
+
+    def test_floor_for_non_square(self):
+        """Для не-квадратов округление вниз: sqrt(2) = 1, sqrt(99) = 9."""
+        self.assertEqual(self.sqrt_of(2, "[r2] = sqrt([r1])").memory[200], 1)
+        self.assertEqual(
+            self.sqrt_of(99, "[r2] = sqrt([r1])").memory[200], 9)
+
+    def test_zero_and_one(self):
+        """sqrt(0) = 0, sqrt(1) = 1."""
+        self.assertEqual(self.sqrt_of(0, "[r2] = sqrt([r1])").memory[200], 0)
+        self.assertEqual(self.sqrt_of(1, "[r2] = sqrt([r1])").memory[200], 1)
+
+    def test_max_constant(self):
+        """Наибольшая константа 8388607: корень 2896."""
+        machine = self.sqrt_of(8388607, "[r2] = sqrt([r1])")
+        self.assertEqual(machine.memory[200], 2896)
+
+    def test_offsets_on_both_sides(self):
+        """Смещения прибавляются к адресам регистров с обеих сторон."""
+        machine = self.sqrt_of(81, "[r2 + 5] = sqrt([r1 + 0])")
+        self.assertEqual(machine.memory[205], 9)
+        self.assertEqual(machine.memory[200], 0)
+
+    def test_source_offset(self):
+        """Смещение источника: корень берётся из памяти[100 + 3]."""
+        machine = run_text(
+            "r1 = 103\nr2 = 49\n[r1] = r2\nr3 = 100\nr4 = 300\n"
+            "[r4] = sqrt([r3 + 3])\n")
+        self.assertEqual(machine.memory[300], 7)
+
+    def test_in_place(self):
+        """Результат можно записать на место исходного значения."""
+        machine = self.sqrt_of(64, "[r1] = sqrt([r1])")
+        self.assertEqual(machine.memory[100], 8)
+
+    def test_registers_unchanged(self):
+        """sqrt работает с памятью и не меняет регистры."""
+        machine = self.sqrt_of(25, "[r2] = sqrt([r1])")
+        self.assertEqual(machine.registers[1:4], [100, 200, 25])
+
+
 class ErrorsTest(unittest.TestCase):
     """Ошибки выполнения."""
 
@@ -68,10 +123,10 @@ class ErrorsTest(unittest.TestCase):
         with self.assertRaisesRegex(VmError, "вне памяти"):
             run_text("r1 = 100000\nr2 = [r1]\n", SMALL_MEMORY * 16)
 
-    def test_sqrt_not_supported_yet(self):
-        """На этапе 3 команда sqrt ещё не выполняется."""
-        with self.assertRaisesRegex(VmError, "не поддерживается"):
-            run_text("[r1] = sqrt([r2])")
+    def test_sqrt_address_out_of_memory(self):
+        """Адрес результата sqrt за пределами памяти - ошибка."""
+        with self.assertRaisesRegex(VmError, "вне памяти"):
+            run_text("r1 = 8000000\n[r1] = sqrt([r0])\n")
 
     def test_unknown_opcode_in_memory(self):
         """Неизвестный код операции в памяти - ошибка."""

@@ -1,4 +1,6 @@
-"""Модель УВМ: единая память, регистры и выполнение команд (этап 3)."""
+"""Модель УВМ: единая память, регистры и выполнение команд (этапы 3-4)."""
+
+from math import isqrt
 
 from uvm.codec import decode, spec_for_opcode
 from uvm.errors import VmError
@@ -26,6 +28,7 @@ class Machine:
             "load": self.op_load,
             "read": self.op_read,
             "write": self.op_write,
+            "sqrt": self.op_sqrt,
         }
 
     def load_program(self, program):
@@ -106,3 +109,10 @@ class Machine:
         """Запись: память[регистр B] получает значение регистра C."""
         address = self.registers[values["B"]]
         self.write_memory(address, self.registers[values["C"]])
+
+    def op_sqrt(self, values):
+        """АЛУ: sqrt. Память[регистр C + E] получает целый корень из
+        памяти[регистр D + B] (округление вниз)."""
+        source = self.registers[values["D"]] + values["B"]
+        target = self.registers[values["C"]] + values["E"]
+        self.write_memory(target, isqrt(self.read_memory(source)))
