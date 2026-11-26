@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.idea/
+.vscode/
+*.swp
+
+# Результаты работы программ
+out/
+*.bin
+dump*.json
