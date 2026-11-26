@@ -16,6 +16,21 @@ SPEC_FIELDS = (
 )
 
 
+SPEC_BYTES = (
+    b"\xE1\x53\x08\x00\x00",
+    b"\x6D\xF0\x00",
+    b"\x80\x25\x02",
+    b"\xBC\x1F\xE2\x0B\xC9\x00",
+)
+
+SPEC_BYTES_TEXT = (
+    "0xE1, 0x53, 0x08, 0x00, 0x00",
+    "0x6D, 0xF0, 0x00",
+    "0x80, 0x25, 0x02",
+    "0xBC, 0x1F, 0xE2, 0x0B, 0xC9, 0x00",
+)
+
+
 def program_path(name):
     """Возвращает путь к примеру программы из папки programs."""
     return os.path.join(PROGRAMS, name)

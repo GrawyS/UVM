@@ -1,25 +1,44 @@
-"""Тесты этапа 1: командная строка ассемблера и режим тестирования."""
+"""Тесты этапов 1-2: командная строка ассемблера и режим тестирования."""
 
 import unittest
 
 from uvm.assembler import EXIT_ERROR, EXIT_OK, main
 from helpers import (
-    SPEC_FIELDS, program_path, run_main, workdir, write_text)
+    SPEC_BYTES, SPEC_BYTES_TEXT, SPEC_FIELDS, program_path, run_main,
+    workdir, write_text)
 
 
 class AssemblerCliTest(unittest.TestCase):
     """Запуск ассемблера из командной строки."""
 
-    def test_test_mode_prints_fields(self):
-        """В режиме --test выводятся поля и значения как в спецификации."""
+    def test_test_mode_prints_fields_and_bytes(self):
+        """В режиме --test печатаются поля и байты как в спецификации."""
         with workdir() as folder:
             output = folder + "/prog.bin"
             code, out, _ = run_main(
                 main, program_path("spec_tests.asm"), output, "--test")
+        expected = []
+        for fields, data in zip(SPEC_FIELDS, SPEC_BYTES_TEXT):
+            expected += [fields, data]
         self.assertEqual(code, EXIT_OK)
-        self.assertEqual(out.splitlines()[:len(SPEC_FIELDS)],
-                         list(SPEC_FIELDS))
-        self.assertIn("Разобрано команд: 4", out)
+        self.assertEqual(out.splitlines()[:len(expected)], expected)
+        self.assertIn("Ассемблировано команд: 4", out)
+
+    def test_binary_file_matches_spec(self):
+        """Двоичный файл - это конкатенация байтов из спецификации."""
+        with workdir() as folder:
+            output = folder + "/prog.bin"
+            run_main(main, program_path("spec_tests.asm"), output)
+            with open(output, "rb") as handle:
+                data = handle.read()
+        self.assertEqual(data, b"".join(SPEC_BYTES))
+
+    def test_unwritable_output(self):
+        """Недоступный путь результата даёт ошибку и код 1."""
+        code, _, err = run_main(
+            main, program_path("spec_tests.asm"), "/no/dir/prog.bin")
+        self.assertEqual(code, EXIT_ERROR)
+        self.assertIn("не удалось записать", err)
 
     def test_without_test_mode_no_fields(self):
         """Без --test поля не печатаются."""
@@ -28,6 +47,7 @@ class AssemblerCliTest(unittest.TestCase):
                 main, program_path("spec_tests.asm"), folder + "/p.bin")
         self.assertEqual(code, EXIT_OK)
         self.assertNotIn("A=1", out)
+        self.assertNotIn("0x", out)
 
     def test_missing_source(self):
         """Отсутствующий исходный файл даёт ошибку и код 1."""
