@@ -5,6 +5,7 @@ import sys
 USAGE = (
     "Запуск:\n"
     "  python -m uvm.assembler ИСХОДНИК ДВОИЧНЫЙ_ФАЙЛ [--test]\n"
+    "  python -m uvm.interpreter ПРОГРАММА ДАМП НАЧАЛО:КОНЕЦ\n"
 )
 
 if __name__ == "__main__":

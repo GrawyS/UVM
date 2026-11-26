@@ -12,3 +12,7 @@ class AsmError(UvmError):
         """Запоминает номер строки и добавляет его в сообщение."""
         super().__init__(f"строка {line}: {message}")
         self.line = line
+
+
+class VmError(UvmError):
+    """Ошибка выполнения программы в интерпретаторе."""
